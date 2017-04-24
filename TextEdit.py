@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui, QtCore
+from qtpy import QtWidgets, QtCore, QtGui, QtPrintSupport
 import Mixin
 import ImageQrc
 rsrcPath = ":/images/"
 
 
-class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditActionsMixin,
+class TextEdit(QtWidgets.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditActionsMixin,
                Mixin.setupTextActionsMixin):
     """程式主要介面
     method :
@@ -38,7 +38,7 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
     def show(self):
         """顯示時，將視窗置於螢幕中央"""
         self.resize(640, 480)
-        desk = QtGui.QDesktopWidget()
+        desk = QtWidgets.QDesktopWidget()
         x = (desk.screenGeometry().width() - self.frameSize().width()) / 2
         y = (desk.screenGeometry().height() - self.frameSize().height()) / 2
         self.move(x, y)
@@ -59,7 +59,7 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
         self.setupTextActions()
         self.__addAboutItem()
 
-        self.textEdit = QtGui.QTextEdit(self)
+        self.textEdit = QtWidgets.QTextEdit(self)
         self.setCentralWidget(self.textEdit)
         self.textEdit.setFocus()
 
@@ -99,12 +99,12 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
         self.textEdit.copyAvailable.connect(self.actionCut.setEnabled)
         self.textEdit.copyAvailable.connect(self.actionCopy.setEnabled)
 
-        QtGui.QApplication.clipboard().dataChanged.connect(self.clipboardDataChanged)
+        QtWidgets.QApplication.clipboard().dataChanged.connect(self.clipboardDataChanged)
         return
 
     def __addAboutItem(self):
         """其它說明事項"""
-        self.helpMenu = QtGui.QMenu("說明", self)
+        self.helpMenu = QtWidgets.QMenu("說明", self)
         self.menuBar().addMenu(self.helpMenu)
         self.helpMenu.addAction("關於PyQt4文字編輯器", self.about)
         return
@@ -130,9 +130,9 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
         codec = QtCore.QTextCodec.codecForHtml(data)
 
         value = codec.toUnicode(data)
-        if QtCore.Qt.mightBeRichText(value):
+        try:
             self.textEdit.setHtml(value)
-        else:
+        except:
             self.textEdit.setPlainText(value)
 
         self.setCurrentFileName(text)
@@ -143,11 +143,13 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
         if not self.textEdit.document().isModified():
             return True
 
-        ret = QtGui.QMessageBox.warning(self, "檔案變更提示訊息", "這個檔案內容已被變更，是否儲存？",
-                                        QtGui.QMessageBox.Save | QtGui.QMessageBox.Discard | QtGui.QMessageBox.Cancel)
-        if ret == QtGui.QMessageBox.Save:
+        ret = QtWidgets.QMessageBox.warning(
+            self, "檔案變更提示訊息", "這個檔案內容已被變更，是否儲存？",
+            QtWidgets.QMessageBox.Save | QtWidgets.QMessageBox.Discard | QtWidgets.QMessageBox.Cancel
+        )
+        if ret == QtWidgets.QMessageBox.Save:
             return self.fileSave()
-        elif ret == QtGui.QMessageBox.Cancel:
+        elif ret == QtWidgets.QMessageBox.Cancel:
             return False
         return True
 
@@ -160,10 +162,11 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
 
     def fileOpen(self):
         """開啟舊檔"""
-        fn = QtGui.QFileDialog.getOpenFileName(self, "開啟檔案...", '',
-                                               "Qt文字編輯器格式檔(*.qxt);;網頁檔(*.htm *.html);;一般文字檔 (*.txt)")
+        fn = QtWidgets.QFileDialog.getOpenFileName(
+            self, "開啟檔案...", '', "Qt文字編輯器格式檔(*.qxt);;網頁檔(*.htm *.html);;一般文字檔 (*.txt)"
+        )
         if fn:
-            self.load(fn)
+            self.load(fn[0])
         return
 
     def setCurrentFileName(self, fileName):
@@ -182,51 +185,50 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
 
     def fileSaveAs(self):
         """另存新檔"""
-        fn = QtGui.QFileDialog.getSaveFileName(self, "儲存檔案",
-                                               '', "Qt文字編輯器格式檔(*.qxt);;網頁檔(*.htm *.html);;一般文字檔 (*.txt)")
+        fn = QtWidgets.QFileDialog.getSaveFileName(
+            self, "儲存檔案", '', "Qt文字編輯器格式檔(*.qxt);;網頁檔(*.htm *.html);;一般文字檔 (*.txt)"
+        )
         if not fn:
             return False
 
-        self.setCurrentFileName(fn)
-        return self.fileSave()
+        self.setCurrentFileName(fn[0])
+        return self.fileSave(fn[1])
 
-    def fileSave(self):
+    def fileSave(self, sub_str='qxt'):
         """儲存檔案"""
         if not self.fileName:
             return self.fileSaveAs()
 
-        end_str = self.fileName.endswith(('.qxt', '.htm', '.html', '.txt'))
-        success = False
-        if end_str:
-            writer = QtGui.QTextDocumentWriter(self.fileName)
-            if end_str == '.qxt':
-                writer.setFormat('html')
+        for _ in ('.qxt', '.html', '.txt'):
+            if _ not in sub_str:
+                continue
+
+            writer = QtGui.QTextDocumentWriter(self.fileName + _)
+            if _ in ('.qxt', '.html'):
+                writer.setFormat(b'html')
+
             success = writer.write(self.textEdit.document())
             if success:
                 self.textEdit.document().setModified(False)
+                break
         else:
-            for _ in ('.qxt', '.html', '.txt'):
-                writer = QtGui.QTextDocumentWriter(self.fileName + _)
-                if _ == '.qxt':
-                    writer.setFormat('html')
-
-                success = writer.write(self.textEdit.document())
-                if success:
-                    self.textEdit.document().setModified(False)
-                    break
+            writer = QtGui.QTextDocumentWriter(self.fileName + _)
+            success = writer.write(self.textEdit.document())
+            if success:
+                self.textEdit.document().setModified(False)
 
         return success
 
     def filePrint(self):
         """列印檔案"""
-        printer = QtGui.QPrinter(QtGui.QPrinter.HighResolution)
-        dlg = QtGui.QPrintDialog(printer, self)
+        printer = QtWidgets.QPrinter(QtWidgets.QPrinter.HighResolution)
+        dlg = QtWidgets.QPrintDialog(printer, self)
 
         if self.textEdit.textCursor().hasSelection():
-            dlg.addEnabledOption(QtGui.QAbstractPrintDialog.PrintSelection)
+            dlg.addEnabledOption(QtWidgets.QAbstractPrintDialog.PrintSelection)
 
         dlg.setWindowTitle("列印檔案")
-        if dlg.exec() == QtGui.QDialog.Accepted:
+        if dlg.exec() == QtWidgets.QDialog.Accepted:
             self.textEdit.print(printer)
 
         del dlg
@@ -234,23 +236,24 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
 
     def filePrintPreview(self):
         """檔案預覽列印"""
-        printer = QtGui.QPrinter(QtGui.QPrinter.HighResolution)
-        preview = QtGui.QPrintPreviewDialog(printer, self)
+        printer = QtWidgets.QPrinter(QtWidgets.QPrinter.HighResolution)
+        preview = QtWidgets.QPrintPreviewDialog(printer, self)
         preview.paintRequested.connect(self.textEdit.print)
         preview.exec()
         return
 
     def filePrintPdf(self):
         """輸出檔案為PDF"""
-        fileName = QtGui.QFileDialog.getSaveFileName(self, "輸出PDF", '', "*.pdf")
-        if not fileName:
+        fn = QtWidgets.QFileDialog.getSaveFileName(self, "輸出PDF", '', "*.pdf")
+        if not fn:
             return
 
+        fileName = fn[0]
         if not fileName.endswith('.pdf'):
             fileName += '.pdf'
 
-        printer = QtGui.QPrinter(QtGui.QPrinter.HighResolution)
-        printer.setOutputFormat(QtGui.QPrinter.PdfFormat)
+        printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
+        printer.setOutputFormat(QtPrintSupport.QPrinter.PdfFormat)
         printer.setOutputFileName(fileName)
         self.textEdit.document().print(printer)
         return
@@ -305,7 +308,7 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
 
     def textColor(self):
         """調整文字顏色"""
-        col = QtGui.QColorDialog.getColor(self.textEdit.textColor(), self)
+        col = QtWidgets.QColorDialog.getColor(self.textEdit.textColor(), self)
         if not col.isValid():
             return
 
@@ -328,7 +331,7 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
 
     def clipboardDataChanged(self):
         """檢查剪貼簿資料是否有文字"""
-        clipboard = QtGui.QApplication.clipboard()
+        clipboard = QtWidgets.QApplication.clipboard()
         md = clipboard.mimeData()
         if md:
             self.actionPaste.setEnabled(md.hasText())
@@ -336,8 +339,10 @@ class TextEdit(QtGui.QMainWindow, Mixin.setupFileActionsMixin, Mixin.setupEditAc
 
     def about(self):
         """顯示其它訊息"""
-        QtGui.QMessageBox.about(self, "關於PyQt4文字編輯器", "這是一個GNU開放授權的免費編輯器，原始版本為Qt4.8.7 example，"
-                                "被Wuso Aiwen移植為PyQt4版本。")
+        QtWidgets.QMessageBox.about(
+            self, "關於PyQt4文字編輯器", "這是一個GNU開放授權的免費編輯器，原始版本為Qt4.8.7 example，"
+            "被Wuso Aiwen移植為PyQt4版本。"
+        )
         return
 
     def mergeFormatOnWordOrSelection(self, f):

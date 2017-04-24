@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui, QtCore
+from qtpy import QtWidgets, QtCore, QtGui
 import ImageQrc
 rsrcPath = ":/images/"
 
@@ -15,11 +15,11 @@ class setupTextActionsMixin:
 
     def setupTextActions(self):
         """定義文字格式功能"""
-        tb = QtGui.QToolBar(self)
+        tb = QtWidgets.QToolBar(self)
         tb.setWindowTitle("Format Actions")
         self.addToolBar(tb)
 
-        menu = QtGui.QMenu("文字格式(&T)", self)
+        menu = QtWidgets.QMenu("文字格式(&T)", self)
         self.menuBar().addMenu(menu)
 
         # text change to bold action
@@ -42,22 +42,22 @@ class setupTextActionsMixin:
 
     def __textFormatAction(self, menu):
         """調整字型及大小"""
-        tb = QtGui.QToolBar(self)
+        tb = QtWidgets.QToolBar(self)
         tb.setAllowedAreas(QtCore.Qt.TopToolBarArea | QtCore.Qt.BottomToolBarArea)
         tb.setWindowTitle("Format Actions")
         self.addToolBarBreak(QtCore.Qt.TopToolBarArea)
         self.addToolBar(tb)
 
         # 更改字型
-        self.comboFont = QtGui.QFontComboBox(tb)
+        self.comboFont = QtWidgets.QFontComboBox(tb)
         tb.addWidget(self.comboFont)
-        self.connect(self.comboFont, QtCore.SIGNAL('activated(QString)'), self.textFamily)
+        self.comboFont.activated.connect(self.textFamily)
 
         # 更改文字顏色功能
         self.__textColorAction(tb, menu)
 
         # 更改文字大小
-        self.comboSize = QtGui.QComboBox(tb)
+        self.comboSize = QtWidgets.QComboBox(tb)
         self.comboSize.setObjectName("comboSize")
         tb.addWidget(self.comboSize)
         self.comboSize.setEditable(True)
@@ -66,16 +66,17 @@ class setupTextActionsMixin:
         for size in db.standardSizes():
             self.comboSize.addItem(str(size))
 
-        self.connect(self.comboSize, QtCore.SIGNAL('activated(QString)'), self.textSize)
-        self.comboSize.setCurrentIndex(self.comboSize.findText(str(QtGui.QApplication.font().pointSize())))
+        self.comboSize.activated.connect(lambda i : self.textSize(self.comboSize.itemText(i)))
+        self.comboSize.setCurrentIndex(self.comboSize.findText(str(QtWidgets.QApplication.font().pointSize())))
         return
 
     def __textBoldAction(self, tb, menu):
         """text change to bold action"""
-        self.actionTextBold = QtGui.QAction(QtGui.QIcon.fromTheme("format-text-bold",
-                                            QtGui.QIcon(rsrcPath + "/textbold.png")), "粗體(&B)", self)
+        self.actionTextBold = QtWidgets.QAction(
+            QtGui.QIcon.fromTheme("format-text-bold", QtGui.QIcon(rsrcPath + "/textbold.png")), "粗體(&B)", self
+        )
         self.actionTextBold.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_B)
-        self.actionTextBold.setPriority(QtGui.QAction.LowPriority)
+        self.actionTextBold.setPriority(QtWidgets.QAction.LowPriority)
         bold = QtGui.QFont()
         bold.setBold(True)
         self.actionTextBold.setFont(bold)
@@ -87,9 +88,10 @@ class setupTextActionsMixin:
 
     def __textItalicAction(self, tb, menu):
         """text change to italic action"""
-        self.actionTextItalic = QtGui.QAction(QtGui.QIcon.fromTheme("format-text-italic",
-                                              QtGui.QIcon(rsrcPath + "/textitalic.png")), "斜體(&I)", self)
-        self.actionTextItalic.setPriority(QtGui.QAction.LowPriority)
+        self.actionTextItalic = QtWidgets.QAction(
+            QtGui.QIcon.fromTheme("format-text-italic", QtGui.QIcon(rsrcPath + "/textitalic.png")), "斜體(&I)", self
+        )
+        self.actionTextItalic.setPriority(QtWidgets.QAction.LowPriority)
         self.actionTextItalic.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_I)
         italic = QtGui.QFont()
         italic.setItalic(True)
@@ -102,10 +104,10 @@ class setupTextActionsMixin:
 
     def __textUnderlineAction(self, tb, menu):
         """text change to have under line"""
-        self.actionTextUnderline = QtGui.QAction(QtGui.QIcon.fromTheme("format-text-underline",
+        self.actionTextUnderline = QtWidgets.QAction(QtGui.QIcon.fromTheme("format-text-underline",
                                                  QtGui.QIcon(rsrcPath + "/textunder.png")), "底斜線(&U)", self)
         self.actionTextUnderline.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_U)
-        self.actionTextUnderline.setPriority(QtGui.QAction.LowPriority)
+        self.actionTextUnderline.setPriority(QtWidgets.QAction.LowPriority)
         underline = QtGui.QFont()
         underline.setUnderline(True)
         self.actionTextUnderline.setFont(underline)
@@ -117,50 +119,50 @@ class setupTextActionsMixin:
 
     def __textAlignAction(self, tb, menu):
         """文字位置調整功能"""
-        grp = QtGui.QActionGroup(self)
+        grp = QtWidgets.QActionGroup(self)
         grp.triggered.connect(self.textAlign)
 
         # Make sure the alignLeft is always left of the alignRight
-        if QtGui.QApplication.isLeftToRight():
-            self.actionAlignLeft = QtGui.QAction(
+        if QtWidgets.QApplication.isLeftToRight():
+            self.actionAlignLeft = QtWidgets.QAction(
                 QtGui.QIcon.fromTheme("format-justify-left", QtGui.QIcon(rsrcPath + "/textleft.png")), "靠左(&L)", grp
             )
-            self.actionAlignCenter = QtGui.QAction(
+            self.actionAlignCenter = QtWidgets.QAction(
                 QtGui.QIcon.fromTheme("format-justify-center", QtGui.QIcon(rsrcPath + "/textcenter.png")),
                 "置中(&C)", grp
             )
-            self.actionAlignRight = QtGui.QAction(
+            self.actionAlignRight = QtWidgets.QAction(
                 QtGui.QIcon.fromTheme("format-justify-right", QtGui.QIcon(rsrcPath + "/textright.png")), "靠右(&R)", grp
             )
         else:
-            self.actionAlignRight = QtGui.QAction(
+            self.actionAlignRight = QtWidgets.QAction(
                 QtGui.QIcon.fromTheme("format-justify-right", QtGui.QIcon(rsrcPath + "/textright.png")), "靠右(&R)", grp
             )
-            self.actionAlignCenter = QtGui.QAction(
+            self.actionAlignCenter = QtWidgets.QAction(
                 QtGui.QIcon.fromTheme("format-justify-center", QtGui.QIcon(rsrcPath + "/textcenter.png")),
                 "置中(&C)", grp
             )
-            self.actionAlignLeft = QtGui.QAction(
+            self.actionAlignLeft = QtWidgets.QAction(
                 QtGui.QIcon.fromTheme("format-justify-left", QtGui.QIcon(rsrcPath + "/textleft.png")),
                 "靠左(&L)", grp
             )
 
-        self.actionAlignJustify = QtGui.QAction(
+        self.actionAlignJustify = QtWidgets.QAction(
             QtGui.QIcon.fromTheme("format-justify-fill", QtGui.QIcon(rsrcPath + "/textjustify.png")), "左右對齊(&J)", grp
         )
 
         self.actionAlignLeft.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_L)
         self.actionAlignLeft.setCheckable(True)
-        self.actionAlignLeft.setPriority(QtGui.QAction.LowPriority)
+        self.actionAlignLeft.setPriority(QtWidgets.QAction.LowPriority)
         self.actionAlignCenter.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_E)
         self.actionAlignCenter.setCheckable(True)
-        self.actionAlignCenter.setPriority(QtGui.QAction.LowPriority)
+        self.actionAlignCenter.setPriority(QtWidgets.QAction.LowPriority)
         self.actionAlignRight.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_R)
         self.actionAlignRight.setCheckable(True)
-        self.actionAlignRight.setPriority(QtGui.QAction.LowPriority)
+        self.actionAlignRight.setPriority(QtWidgets.QAction.LowPriority)
         self.actionAlignJustify.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_J)
         self.actionAlignJustify.setCheckable(True)
-        self.actionAlignJustify.setPriority(QtGui.QAction.LowPriority)
+        self.actionAlignJustify.setPriority(QtWidgets.QAction.LowPriority)
 
         tb.addActions(grp.actions())
         menu.addActions(grp.actions())
@@ -170,7 +172,7 @@ class setupTextActionsMixin:
         """更改文字顏色功能"""
         pix = QtGui.QPixmap(16, 16)
         pix.fill(QtCore.Qt.black)
-        self.actionTextColor = QtGui.QAction(QtGui.QIcon(pix), "字體顏色...", self)
+        self.actionTextColor = QtWidgets.QAction(QtGui.QIcon(pix), "字體顏色...", self)
         self.actionTextColor.triggered.connect(self.textColor)
         tb.addAction(self.actionTextColor)
         menu.addAction(self.actionTextColor)
